@@ -8,4 +8,4 @@
 - ZZToP: https://github.com/zztopper/voron_v2.4_1030/tree/370ed0a82475f9d416af5d8f6303a3fba3193a0f
 - Vassssko: https://github.com/Vassssko/voron_v2.4_982
 
-[Раздел макросов ] (MACROS/)
+[Раздел макросов ] (./MACROS/)
