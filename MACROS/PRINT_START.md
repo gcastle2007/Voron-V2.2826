@@ -31,7 +31,7 @@ variable_print_info: 'true'
 ##   Final   : all what needs to be done after wait timet
 variable_state: 'Prepare'             # переменная state - задаёт этап выполнения подготовки к печати. По умолчанию стадия Prepare
 variable_first: 'true'
-variable_soak: 0.25                   # ожидаемое значание среднеро PWM стола. Идея состоит м втом, чтобы снять некоторое кол-во показаний PWD и высчитать среднее.
+variable_soak: 0.25                   # ожидаемое значание среднеро PWM стола. Идея состоит в том, чтобы снять некоторое кол-во показаний PWM и высчитать среднее.
 variable_pwm: 1                       # начальное значение PWM
 variable_avgpwm: 1                    # среднее накопительное значение PWM
 variable_tests: 0                     # счётчик опросов PWM
