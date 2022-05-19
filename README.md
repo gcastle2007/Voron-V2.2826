@@ -9,3 +9,8 @@
 - Vassssko: https://github.com/Vassssko/voron_v2.4_982
 
 [Раздел макросов ](./MACROS/)
+
+## Что существует полезного?
+
+- [Print Tuning Guide](https://github.com/AndrewEllis93/Print-Tuning-Guide)
+- [PIF profile](https://github.com/AndrewEllis93/Ellis-PIF-Profile)
