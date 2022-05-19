@@ -1,1 +1,4 @@
-# Configuration of Voron_2.2826
+ # Configuration of Voron 2.2826
+
+В данном репозитории находится мой актуальный конфиг от 3D принетра Voron 2.4 2.2826.
+Описание макроса PRINT_START можно найти в тут
