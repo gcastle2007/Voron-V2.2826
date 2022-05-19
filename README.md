@@ -1,1 +1,1 @@
-# Voron_2.2826
+# Configuration of Voron_2.2826
