@@ -5,7 +5,7 @@
 Даный конфиг написан полностью самостоятельно с нуля.
 Какие-то дополнительные фичи из макросов были подсмотрены в конфигах нижепредставленных товарищей, разобраны для понимания и перепилены под себя:
 - Zellner Alex (очень лютый конфиг, не для слабонервных): https://github.com/zellneralex/klipper_config
-- ZZToP: https://github.com/zztopper/voron_v2.4_1030/tree/370ed0a82475f9d416af5d8f6303a3fba3193a0f
+- ZZToP: https://github.com/zztopper/voron_v2.4_1030
 - Vassssko: https://github.com/Vassssko/voron_v2.4_982
 
 [Раздел макросов ] (./MACROS/)
