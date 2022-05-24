@@ -12,6 +12,9 @@
 
 ```
 [gcode_macro PRINT_START]
+```
+### Инициализация необходимых переменных при запуске Klipper:
+```
 variable_retract: 0                   # задание ретракта
 ##  User Paramaters
 ##  BED_TEMP      : Target temperature for the Bed. Is also used to decide 
@@ -31,12 +34,13 @@ variable_print_info: 'true'
 ##   Final   : all what needs to be done after wait timet
 variable_state: 'Prepare'             # переменная state - задаёт этап выполнения подготовки к печати. По умолчанию стадия Prepare
 variable_first: 'true'
-variable_soak: 0.25                   # ожидаемое значание среднеро PWM стола. Идея состоит в том, чтобы снять некоторое кол-во показаний PWM и высчитать среднее.
+variable_soak: 0.35                   # ожидаемое значание среднеро PWM стола. Идея состоит в том, чтобы снять некоторое кол-во показаний PWM и высчитать среднее.
 variable_pwm: 1                       # начальное значение PWM
 variable_avgpwm: 1                    # среднее накопительное значение PWM
 variable_tests: 0                     # счётчик опросов PWM
 variable_left: 60                     # кол-во опросов PWM. Опросы будут проводиться 1 раз в секунду. Соответственно 60 раз.
 variable_clean2: False
+variable_bmeshv: False                # перепенная, отвечающая за необходимость выполнения BED_MESH_CALIBRATE (True/False)
 gcode:
   {% set extruder_temp = params.EXTRUDER_TEMP|default(240)|float %}   # Получание значения температуры экструдера из слайсера
   {% set bed_temp = params.BED_TEMP|default(80)|float %}              # Получание значения температуры стола из слайсера
@@ -49,12 +53,195 @@ gcode:
   {% set bmesh = params.BMESH|default("no") %}                        # Нужно ли собирать новый bed mesh, yes/no задаётся через слайсер
 
 #############  BED temp values  #############
-  # get actual temp from extra sensor or heater sensor
-  {% if 'temperature_sensor bed' in printer %}
-    {% set actBed = printer['temperature_sensor bed'].temperature|int %}
+  # get actual temp from extra sensor or heater sensor / получение актуальной температуры стола с дополнительного сенсора или с термистора в столе
+  {% if 'temperature_sensor bed' in printer %}                             # проверка на наличие дополнительного сенсора
+    {% set actBed = printer['temperature_sensor bed'].temperature|int %}   # если дополнительный сенсор есть, то actBed (актуальная температура стола) равен данным с температуры этого сенсора
   {% else %}
-    {% set actBed = printer.heater_bed.temperature|int %}
+    {% set actBed = printer.heater_bed.temperature|int %}                  # иначе actBed равна температуры с термистора стола по умолчанию
   {% endif %}
   # get max allow bed temp from config. Lower it by 5C to avoid shutdown
-  {% set cfg_bed_max = printer.configfile.settings.heater_bed.max_temp|int - 5 %}
+  {% set cfg_bed_max = printer.configfile.settings.heater_bed.max_temp|int - 5 %} # получение максимальной температуры стола, которую можно использовать. Это максимальная температура, указанная в конфиге минус 5 градусов.
+```
+
+### Подготовительная стадия, называется Prepare:
+```
+#############  Prepare Stage #############
+  {% if state == 'Prepare' %}  
+#    _PRINT_AR T="Preparation stage"
+    M117 Preparation stage
+    {% set bed_temp = params.BED_TEMP|default(80)|int %}
+    {% set extruder_temp = params.EXTRUDER_TEMP|default(240)|int %}
+    {% set extruder_temp_pre = (extruder_temp|float * 0.7)|int %}
+#    {% set soak = params.SOAK|default(0.35) %}
+  {% set soak = printer["gcode_macro PRINT_START"].soak %}  
+```
+
+### Стадия сохранения значений глобальных переменных:
+```
+#############  Variable setup  #############
+    CLEAR_PAUSE
+    SET_GCODE_VARIABLE MACRO=CANCEL_PRINT VARIABLE=execute VALUE='"false"'                # macros CANCEL_PRINT must have variable "execute" with value "false"
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=extruder VALUE={extruder_temp}          # extruder temperature
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=extruder_pre VALUE={extruder_temp_pre}  # extruder pre-heat
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=bed VALUE={bed_temp}                    # target bed temperature
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=bmeshv VALUE={bmesh}                    # bed mesh new or not new
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=left VALUE=30                           # counter for PWM calculate
+```
+
+### Стадия нагрева стола:
+```
+#############  Heating bed  #############
+    LED_ON                                                                       # LED ON
+    # start Nevermore if ABS
+    {% if "ABS" in filament_name %} 
+    #      NEVERMORE_ON
+       SET_FAN_SPEED FAN=Nevermore SPEED=0.95
+    {% else %}
+      NEVERMORE_OFF
+    {% endif %}
+    _PRINT_AR T="Heating Bed"
+    {action_respond_info("Heating Bed")}
+    M140 S{bed_temp|int}                                                         # start heating bed and not wait
+    M104 S{extruder_pre|int}  ; heat bed and wait                                # start extruder pre-heat
+    G28                                                                          # homing
+    G90
+    G0 Z30 F1500                                                                 # Z to low 30
+    G0 X175 Y175 F24000                                                            # head to center of bed
+    M106 S90              ; switch part cooling ~35% to move air in chamber
+    M190 S{bed_temp|int}  ; heat bed and wait
+    PAUSE_BASE                                                                   # PAUSE!!!!
+    {% set pwm = printer['heater_bed'].power | float %}                          # get PWM from heater_bed
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=pwm VALUE={pwm}
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=avgpwm VALUE={pwm}
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=tests VALUE=1
+    _PRINT_AR T="{"T:%02d/30 P:%.3f/%.3f" % (left|int,pwm|float,soak|float)}"
+    # Call the wait macro the first time
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"HeatSoak"'
+    UPDATE_DELAYED_GCODE ID=START_PRINT_WAIT DURATION=0.1
+```
+
+### Стадия догрева стола до PID = 35%:
+```
+#############  HeatSoak #############
+  {% elif state == 'HeatSoak' %}
+    M117 HeatSoak
+    {action_respond_info("HeatSoak")}
+    {% if left == 0 %}
+      {% if avgpwm >= soak|float %}
+        SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=pwm VALUE=0                # PWM reset to zero
+        SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=tests VALUE=0              # tests counter reset to zero
+        SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=left VALUE=30              # time counter reset to 30 (30 second)
+      {% else %}
+        {action_respond_info("Done. Mean PWM: %f" % (avgpwm|float))}
+        SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"QGL"'
+        {action_respond_info("Must made Bed Mesh")}
+      {% endif %}
+    {% endif %}
+    UPDATE_DELAYED_GCODE ID=START_PRINT_WAIT DURATION=1
+```
+
+### Стадия выравнивания портала:
+```
+#############  QGL #############
+  {% elif state == 'QGL' %}
+    M106 S0
+    M117 Quad Gantry Level
+    QUAD_GANTRY_LEVEL
+    G28 Z
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"BedMesh"'
+    UPDATE_DELAYED_GCODE ID=START_PRINT_WAIT DURATION=0.1
+```
+
+### Стадия калибровки меша (BED_MESH_CALIBRATE):
+```
+#############  Bed Mesh calibrate #############
+  {% elif state == 'BedMesh' %}
+    _PRINT_AR T="Bed mesh stage"
+    {action_respond_info("Bed Mesh Calibrate")}
+    {% if bmeshv %}
+      {action_respond_info("New bed mesh create")}
+      _PRINT_AR T="New bed mesh create"
+      BED_MESH_CALIBRATE
+    {% else %}
+      {% if bed_temp>=110 %}
+        BED_MESH_PROFILE LOAD=PEI-110T
+      {% endif %}
+      {% if bed_temp>=100 and bed_temp<110 %}
+        BED_MESH_PROFILE LOAD=PEI-100T
+      {% endif %}
+      {% if bed_temp>=90 and bed_temp<100 %}
+        BED_MESH_PROFILE LOAD=PEI-90T
+      {% endif %}
+      {% if bed_temp>=80 and bed_temp<90 %}
+        BED_MESH_PROFILE LOAD=PEI-80T
+      {% endif %}
+      {% if bed_temp>=70 and bed_temp<80 %}
+        BED_MESH_PROFILE LOAD=PEI-70T
+      {% endif %}
+      {% if bed_temp>=60 and bed_temp<70 %}
+        BED_MESH_PROFILE LOAD=PEI-60T
+      {% endif %}
+    {% endif %}
+    G90
+    G0 Z30 F1500                                                                 # Z to low 30
+    G1 X175 Y175 F30000                                                            # head to center of bed
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"Final"'
+    UPDATE_DELAYED_GCODE ID=START_PRINT_WAIT DURATION=0.1
+```
+
+### Финальная стадия:
+```
+#############  Final Stage #############
+  {% elif state == 'Final' %}
+    {action_respond_info("Final Stage")}
+    M117 Final Stage
+    # set staus back to prepare for the next run 
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"Prepare"' 
+    M109 S{extruder|int} ; heat extruder and wait
+    M117 Clean nozzle.
+    CLEAN_NOZZLE
+    M83
+    G1 E-2
+    M117 Caibration Z-offset.
+    RESUME_BASE
+    CALIBRATE_Z
+    PAUSE_BASE
+    G92 E0                                                                      # reset extruder
+    M117 Prime Line Print
+    PRIME_LINE
+    M117
+    RESUME_BASE                                                                 # RESUME !!!!!!
+  {% endif %}
+#############  Begin of ptinting #############
+```
+
+### Скрипт PRINT_START_WAIT - запускается на выполнение с задержкой. Также позволяет просчитать средний PWM на базе выборки из N значений.
+```
+[delayed_gcode START_PRINT_WAIT]
+gcode:
+ # Print remaining time
+  {% if printer["gcode_macro PRINT_START"].state == 'HeatSoak' %}
+      {% set pwm = printer['heater_bed'].power | float %}
+      {% set totalpwm = printer["gcode_macro PRINT_START"].pwm|float %}
+      {% set tests = printer["gcode_macro PRINT_START"].tests|int + 1 %}
+      {% set left = printer["gcode_macro PRINT_START"].left|int - 1 %}
+      {% set soak = printer["gcode_macro PRINT_START"].soak | float %}
+      {% set avgpwm = ((totalpwm+pwm)/tests)|float %}
+      SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=avgpwm VALUE={avgpwm}
+      SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=pwm VALUE={(totalpwm+pwm)|float}
+      SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=tests VALUE={tests}
+      SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=left VALUE={left}
+      M117 S{'T:%02d' % left|int}{'/30 P:%.2f' % (avgpwm|float)}{'/%.2f' % (soak|float)}
+  {% endif %}
+  # Check CANCLE_PRINT was executed
+  {% if printer["gcode_macro CANCEL_PRINT"].execute == 'false' %}
+    # Jump back to PRINT_START
+    PRINT_START
+  {% else %}
+    # break loop
+    # insure state is correct for the next print start
+    SET_GCODE_VARIABLE MACRO=CANCEL_PRINT VARIABLE=execute VALUE='"false"'
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"Prepare"'
+#    UPDATE_DELAYED_GCODE ID=_CLEAR_DISPLAY DURATION=1
+  {% endif %}
 ```
