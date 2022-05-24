@@ -10,6 +10,11 @@
 
 [Раздел макросов ](./MACROS/)
 
+Запуск печати осуществляется через
+```
+PRINT_START EXTRUDER_TEMP=[first_layer_temperature] BED_TEMP=[first_layer_bed_temperature] CHAMBER=[chamber_temperature] FILAMENT=[filament_type] BMESH=True
+```
+
 ## Что существует полезного?
 
 - [Print Tuning Guide](https://github.com/AndrewEllis93/Print-Tuning-Guide)
