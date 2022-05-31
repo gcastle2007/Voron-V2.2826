@@ -1,0 +1,53 @@
+#############  Final Stage #############
+  {% elif state == 'Final' %}
+    {action_respond_info("Final Stage")}
+    M117 Final Stage
+    # set staus back to prepare for the next run 
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"Prepare"' 
+    M109 S{extruder|int} ; heat extruder and wait
+    M117 Clean nozzle.
+    CLEAN_NOZZLE
+    M117 Caibration Z-offset.
+    CALIBRATE_Z
+#    CLEAN_NOZZLE
+    M117 Prime Line Print
+    RESUME_BASE                                                                 # RESUME !!!!!!
+    PRIME_LINE
+    G92 E0
+    G90
+    M83
+#    G1 E-2
+#    M117 Caibration Z-offset.
+#    RESUME_BASE
+#    CALIBRATE_Z
+#    PAUSE_BASE
+#    G92 E0                                                                      # reset extruder
+    M117
+    
+  {% endif %}
+
+
+Old and worked:
+
+#############  Final Stage #############
+  {% elif state == 'Final' %}
+    {action_respond_info("Final Stage")}
+    M117 Final Stage
+    # set staus back to prepare for the next run 
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"Prepare"' 
+    M109 S{extruder|int} ; heat extruder and wait
+    M117 Clean nozzle.
+    CLEAN_NOZZLE
+    M83
+    G1 E-2
+    M117 Caibration Z-offset.
+    RESUME_BASE
+    CALIBRATE_Z
+    PAUSE_BASE
+    G92 E0                                                                      # reset extruder
+    M117 Prime Line Print
+    PRIME_LINE
+    M117
+    RESUME_BASE                                                                 # RESUME !!!!!!
+  {% endif %}
+#############  Begin of ptinting #############
