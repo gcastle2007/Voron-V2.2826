@@ -91,33 +91,33 @@ gcode:
 ### Стадия нагрева стола:
 ```
 #############  Heating bed  #############
-    LED_ON                                                                       # LED ON
+    LED_ON                                                                       # включение освещения внутри принтера
     # start Nevermore if ABS
-    {% if "ABS" in filament_name %} 
+    {% if "ABS" in filament_name %}                                              # если печатается SBD, то включается Nevermore, чтобы фильтровать воздух в режиме рециркуляции внутри камеры
     #      NEVERMORE_ON
        SET_FAN_SPEED FAN=Nevermore SPEED=0.95
     {% else %}
-      NEVERMORE_OFF
+      NEVERMORE_OFF                                                              # иначе не включается
     {% endif %}
-    _PRINT_AR T="Heating Bed"
+    _PRINT_AR T="Heating Bed"                                                    # выводим сообщение от стади на грева стола
     {action_respond_info("Heating Bed")}
-    M140 S{bed_temp|int}                                                         # start heating bed and not wait
-    M104 S{extruder_pre|int}  ; heat bed and wait                                # start extruder pre-heat
-    G28                                                                          # homing
-    G90
-    G0 Z30 F1500                                                                 # Z to low 30
-    G0 X175 Y175 F24000                                                            # head to center of bed
-    M106 S90              ; switch part cooling ~35% to move air in chamber
-    M190 S{bed_temp|int}  ; heat bed and wait
-    PAUSE_BASE                                                                   # PAUSE!!!!
-    {% set pwm = printer['heater_bed'].power | float %}                          # get PWM from heater_bed
-    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=pwm VALUE={pwm}
-    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=avgpwm VALUE={pwm}
-    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=tests VALUE=1
-    _PRINT_AR T="{"T:%02d/30 P:%.3f/%.3f" % (left|int,pwm|float,soak|float)}"
+    M140 S{bed_temp|int}                                                         # запускаем нагрев стола и не ждём
+    M104 S{extruder_pre|int}  ; heat bed and wait                                # запускаем преднагрев экструдера и ждём
+    G28                                                                          # хомимся
+    G90                                                                          # координаты абсолютные
+    G0 Z30 F1500                                                                 # поднимем голову на 30мм
+    G0 X175 Y175 F24000                                                          # переместим её в центр стола
+    M106 S90              ; switch part cooling ~35% to move air in chamber      # включим, примерно, на 35% фаны охлаждения модели, чтобы перепешивать воздух в камере
+    M190 S{bed_temp|int}  ; heat bed and wait                                    # нагреваем стол, но уже ждём
+    PAUSE_BASE                                                                   # PAUSE!!!! важный момент, если этого не сделать, то получим начало печати раньше времени
+    {% set pwm = printer['heater_bed'].power | float %}                          # получаем PWM от нагревателя стола
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=pwm VALUE={pwm}                # сохраняем глобально значения переменных
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=avgpwm VALUE={pwm}             # ...
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=tests VALUE=1                  # ...
+    _PRINT_AR T="{"T:%02d/30 P:%.3f/%.3f" % (left|int,pwm|float,soak|float)}"    # выводим сообщение
     # Call the wait macro the first time
-    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"HeatSoak"'
-    UPDATE_DELAYED_GCODE ID=START_PRINT_WAIT DURATION=0.1
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"HeatSoak"'       # устанавливаем стадию догрева стола - HeatSoak
+    UPDATE_DELAYED_GCODE ID=START_PRINT_WAIT DURATION=0.1                        # вывваем скрипт START_PRINT_WAIT на выполнение, но с задержкой старта с 0.1 секунды
 ```
 
 ### Стадия догрева стола до PID = 35%:
