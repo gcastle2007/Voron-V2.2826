@@ -10,6 +10,14 @@
 
 Скрипт периодически может корректироваться и меняться, в зависимости от моих потребностей.
 
+Запуск печати осуществляется:
+PRINT_START EXTRUDER_TEMP=[first_layer_temperature] BED_TEMP=[first_layer_bed_temperature] CHAMBER=[chamber_temperature] FILAMENT=[filament_type] BMESH=True
+* [first_layer_temperatire] - температура печати первого слоя
+* [first_layer_bed_temperature] - температура стола для печати первого слоя
+* [chamber_temperature] - минимальная необходима температура камеры для начала печати (сейчас не использую)
+* [filament_type] - тип филамента используемого при печати. В зависимости от этого включается Nevermore и вытяжной вентилятор
+* BMESH=True - сообщение принтеру, что нужно будет собрать Bed Mesh. Если не нужно, то False
+
 ### Разберём подробно все этапы и действия.
 
 ```
