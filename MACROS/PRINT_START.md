@@ -8,6 +8,8 @@
 - BedMesh - в засимости от необходимости, либо перестраиваем полностью Bed Mesh, либо подгружаем уже заранее сохранённую карту в зависимости от температуры.
 - Final - последняя стадия, в которой догревается экструдер, чистится сопло, калибркуется Z-Offset через CALIBRATE_Z, прогоняется PRIME_LINE и далее уже идёт печать.
 
+Скрипт периодически может корректироваться и меняться, в зависимости от моих потребностей.
+
 ###Разберём подробно все этапы и действия.
 
 ```
@@ -38,7 +40,7 @@ variable_soak: 0.35                   # ожидаемое значание ср
 variable_pwm: 1                       # начальное значение PWM
 variable_avgpwm: 1                    # среднее накопительное значение PWM
 variable_tests: 0                     # счётчик опросов PWM
-variable_left: 60                     # кол-во опросов PWM. Опросы будут проводиться 1 раз в секунду. Соответственно 60 раз.
+variable_left: 30                     # кол-во опросов PWM. Опросы будут проводиться 1 раз в секунду. Соответственно 30 раз.
 variable_clean2: False
 variable_bmeshv: False                # перепенная, отвечающая за необходимость выполнения BED_MESH_CALIBRATE (True/False)
 gcode:
@@ -124,16 +126,16 @@ gcode:
 ```
 #############  HeatSoak #############
   {% elif state == 'HeatSoak' %}
-    M117 HeatSoak
+    M117 HeatSoak                                                                # Вывод на экран сообщения о догреве стола
     {action_respond_info("HeatSoak")}
     {% if left == 0 %}
       {% if avgpwm >= soak|float %}
-        SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=pwm VALUE=0                # PWM reset to zero
-        SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=tests VALUE=0              # tests counter reset to zero
-        SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=left VALUE=30              # time counter reset to 30 (30 second)
+        SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=pwm VALUE=0                # сброс значения PWM в ноль
+        SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=tests VALUE=0              # сброс счётчика тестовых запросов в ноль
+        SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=left VALUE=30              # кол-во опросов ставим 30. Ставятся с задержкой 30 секунд.
       {% else %}
         {action_respond_info("Done. Mean PWM: %f" % (avgpwm|float))}
-        SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"QGL"'
+        SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"QGL"'        # Переходим на стадию Quad Gantry Level (выравнивание портала)
         {action_respond_info("Must made Bed Mesh")}
       {% endif %}
     {% endif %}
@@ -144,11 +146,11 @@ gcode:
 ```
 #############  QGL #############
   {% elif state == 'QGL' %}
-    M106 S0
-    M117 Quad Gantry Level
-    QUAD_GANTRY_LEVEL
-    G28 Z
-    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"BedMesh"'
+    M106 S0                                                                      # выключаем вентиляторы обдува модели
+    M117 Quad Gantry Level                                                       # сообщение на экран
+    QUAD_GANTRY_LEVEL                                                            # выравниваем портал
+    G28 Z                                                                        # хомим снова Z, т.к. если у нас портал был искривлён, то предыдущий хоминг не корректен
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"BedMesh"'        # переводим стадию на сборку Bed Mesh
     UPDATE_DELAYED_GCODE ID=START_PRINT_WAIT DURATION=0.1
 ```
 
@@ -196,21 +198,21 @@ gcode:
     {action_respond_info("Final Stage")}
     M117 Final Stage
     # set staus back to prepare for the next run 
-    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"Prepare"' 
-    M109 S{extruder|int} ; heat extruder and wait
-    M117 Clean nozzle.
-    CLEAN_NOZZLE
-    M83
-    G1 E-2
-    M117 Caibration Z-offset.
-    RESUME_BASE
-    CALIBRATE_Z
-    PAUSE_BASE
-    G92 E0                                                                      # reset extruder
-    M117 Prime Line Print
-    PRIME_LINE
-    M117
-    RESUME_BASE                                                                 # RESUME !!!!!!
+    SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"Prepare"'       # Восстанавливаем будущий статус на Prepare для следущей печати
+    M109 S{extruder|int} ; heat extruder and wait                               # догреваем экструдер и ждём
+    M117 Clean nozzle.                                                          # сообщение об очистке сопла на экран
+    CLEAN_NOZZLE                                                                # едем чистить сопло
+    M83                                                                         # перевод мотора экструдера в режим относительных координат
+    G1 E-2                                                                      # детаем откат филамента на 2мм, чтобы сопло не текло
+    M117 Caibration Z-offset.                                                   # сообщение о калибровке Z-offset на экран
+    RESUME_BASE                                                                 # Важно! Просыпаемся от PAUSE, чтобы значения калибровки запомнились
+    CALIBRATE_Z                                                                 # Калибруем Z-offset
+    PAUSE_BASE                                                                  # Важно! Снова уходим в PAUSE
+    G92 E0                                                                      # Сброс значеня экструдера в ноль
+    M117 Prime Line Print                                                       # сообщение о печати Prime Line
+    PRIME_LINE                                                                  # Печатаем Prime Line
+    M117                                                                        # Очищаем экран
+    RESUME_BASE                                                                 # Просыпаемся из паузы и... уходим в печать
   {% endif %}
 #############  Begin of ptinting #############
 ```
