@@ -27,3 +27,5 @@ PRINT_START EXTRUDER_TEMP=[first_layer_temperature] BED_TEMP=[first_layer_bed_te
 
 - [Print Tuning Guide](https://github.com/AndrewEllis93/Print-Tuning-Guide)
 - [PIF profile](https://github.com/AndrewEllis93/Ellis-PIF-Profile)
+- [Exclude Object импортировано в Klipper] (https://github.com/Klipper3d/klipper/blob/master/docs/Exclude_Object.md)
+-- Что для этого нужно?
