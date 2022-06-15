@@ -15,7 +15,9 @@ preprocess_cancellation.py;
 ```
 
 В SS обязательна галка:
+
 ![SS_objects](./imgs/SS_obj.png)
 
 Итого:
+
 ![Final](./imgs/exclobjfin.png)
