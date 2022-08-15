@@ -40,7 +40,7 @@ PRINT_START EXTRUDER_TEMP=[first_layer_temperature] BED_TEMP=[first_layer_bed_te
 - [Nevermore, система рециркуляции воздуха в камере. Позволяет быстрее прогреть камеру, а также фильтрует воздух через активированный уголь](https://github.com/nevermore3d/Nevermore_Micro)
 - [Klicky Probe](https://github.com/VoronDesign/VoronUsers/tree/master/printer_mods/JosAr/Klicky-Probe)
 - [Unklicky, альтернатива Klicky Probe](https://github.com/majarspeed/Unklicky)
-
+- [Кинематическое крепление стола](https://github.com/tanaes/whopping_Voron_mods/tree/main/kinematic_bed)
 
 ## На что смотреть после Voron 2.4?
 - [Voron 0](https://github.com/VoronDesign/Voron-0)
