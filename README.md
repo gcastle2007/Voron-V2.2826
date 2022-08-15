@@ -31,6 +31,8 @@ PRINT_START EXTRUDER_TEMP=[first_layer_temperature] BED_TEMP=[first_layer_bed_te
 
 ## Полезные, с моей точки зрения, модицифкации:
 - [Корзина и щётка для сопла](https://github.com/VoronDesign/VoronUsers/tree/master/abandoned_mods/printer_mods/edwardyeeks/Decontaminator_Purge_Bucket_&_Nozzle_Scrubber)
+- [Pinmod, замена винтов на стальные или карбоновые валы, а заодно и шпуль на подшипники](https://github.com/VoronDesign/VoronUsers/tree/master/printer_mods/hartk1213/Voron2.4_Trident_Pins_Mod)
+- [Перенос Y-end_stop на A drive](https://github.com/VoronDesign/VoronUsers/tree/master/printer_mods/hartk1213/Voron2.4_Y_Endstop_Relocation)
 - [Голова Mantis с отличным обдувом на двух 5015 турбинках](https://github.com/VoronDesign/VoronUsers/tree/master/printer_mods/Long/Mantis_Dual_5015)
 - [Убираем "цепи" (Umbilical Mod)](https://github.com/VoronDesign/VoronUsers/tree/master/printer_mods/Minsekt/Rear_Umbilical)
 - [Ретрактор для Umbilical Mod](https://github.com/VoronDesign/VoronUsers/tree/master/printer_mods/Ellis/Badge_Retractor_Mount)
