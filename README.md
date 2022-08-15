@@ -34,6 +34,8 @@ PRINT_START EXTRUDER_TEMP=[first_layer_temperature] BED_TEMP=[first_layer_bed_te
 - [Pinmod, замена винтов на стальные или карбоновые валы, а заодно и шпуль на подшипники](https://github.com/VoronDesign/VoronUsers/tree/master/printer_mods/hartk1213/Voron2.4_Trident_Pins_Mod)
 - [Перенос Y-end_stop на A drive](https://github.com/VoronDesign/VoronUsers/tree/master/printer_mods/hartk1213/Voron2.4_Y_Endstop_Relocation)
 - [Голова Mantis с отличным обдувом на двух 5015 турбинках](https://github.com/VoronDesign/VoronUsers/tree/master/printer_mods/Long/Mantis_Dual_5015)
+- [Dragonator, как обрезать E3DV6](imgs/DragonCutting.jpg)
+- [Dragonator, шаблон для сверления отверстий в обрезанном E3DV6](STL/Dragonator.stl)
 - [Убираем "цепи" (Umbilical Mod)](https://github.com/VoronDesign/VoronUsers/tree/master/printer_mods/Minsekt/Rear_Umbilical)
 - [Ретрактор для Umbilical Mod](https://github.com/VoronDesign/VoronUsers/tree/master/printer_mods/Ellis/Badge_Retractor_Mount)
 - [Удобные крепления для панелей](https://github.com/Annex-Engineering/Other_Printer_Mods/tree/master/All_Printers/Annex_Panel_2020_Clips_and_Hinges)
@@ -43,6 +45,7 @@ PRINT_START EXTRUDER_TEMP=[first_layer_temperature] BED_TEMP=[first_layer_bed_te
 - [Klicky Probe](https://github.com/VoronDesign/VoronUsers/tree/master/printer_mods/JosAr/Klicky-Probe)
 - [Unklicky, альтернатива Klicky Probe](https://github.com/majarspeed/Unklicky)
 - [Кинематическое крепление стола](https://github.com/tanaes/whopping_Voron_mods/tree/main/kinematic_bed)
+- [Чем смазывать рельсы?](imgs/SHC007.jpg)
 
 ## На что смотреть после Voron 2.4?
 - [Voron 0](https://github.com/VoronDesign/Voron-0)
