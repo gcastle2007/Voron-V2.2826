@@ -1,8 +1,8 @@
 [gcode_macro BED_MESH_CALIBRATE]
 rename_existing: BED_MESH_CALIBRATE_BASE
 ; gcode parameters
-variable_parameter_AREA_START : 10,30
-variable_parameter_AREA_END : 340,320
+variable_parameter_AREA_START : 0,0
+variable_parameter_AREA_END : 0,0
 ; the clearance between print area and probe area 
 variable_mesh_area_offset : 5.0
 ; number of sample per probe point
@@ -22,9 +22,9 @@ gcode:
         {% set safe_max_y = bedMeshConfig.mesh_max.split(",")[1]|float %}
 
         {% set area_min_x = params.AREA_START.split(",")[0]|float %}
-	{% set area_min_y = params.AREA_START.split(",")[1]|float %}
-	{% set area_max_x = params.AREA_END.split(",")[0]|float %}
-	{% set area_max_y = params.AREA_END.split(",")[1]|float %}
+    	{% set area_min_y = params.AREA_START.split(",")[1]|float %}
+    	{% set area_max_x = params.AREA_END.split(",")[0]|float %}
+    	{% set area_max_y = params.AREA_END.split(",")[1]|float %}
 
 	{% if bedMeshConfig.probe_count.split(",")|length == 2 %}
             {% set meshPointX = bedMeshConfig.probe_count.split(",")[0]|int %}

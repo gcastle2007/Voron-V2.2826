@@ -1,0 +1,92 @@
+[gcode_macro START_PRINT]
+variable_retract: 5
+gcode:
+    {% set extruder_temp = params.EXTRUDER_TEMP|default(240)|float %}
+    {% set bed_temp = params.BED_TEMP|default(70)|float %}
+    {% set cham_temp = params.CHAMBER|default(40)|float %}
+    {% set E = printer["gcode_macro START_PRINT"].retract|float %}
+    {% set filament_name = params.FILAMENT%}
+    {% set bmesh = params.BMESH%}
+
+# start Nevermore if ABS
+    {% if "ABS" in filament_name %} 
+#      NEVERMORE_ON
+       SET_FAN_SPEED FAN=Nevermore SPEED=0.95
+    {% else %}
+      NEVERMORE_OFF
+    {% endif %}
+
+    LED_ON # Ligth ON
+    G90
+    M117 Home XYZ axis.
+    G28
+    G1 X175 Y175 F24000 # Move to center of bed 
+
+    SET_HEATER_TEMPERATURE HEATER=heater_bed TARGET={bed_temp}                  # set bed t℃
+;    M117 Bed heating...
+    TEMPERATURE_WAIT SENSOR=heater_bed MINIMUM={bed_temp * 1.0}                # wait until bed is partially heated
+;    G1 X175 Y175 F6000                                                              # move to center of bed
+    SET_HEATER_TEMPERATURE HEATER=extruder TARGET={extruder_temp * 0.7}               # set nozzle 70% t℃
+
+    TEMPERATURE_WAIT SENSOR="temperature_sensor chamber" MINIMUM={cham_temp}                    # wait Chamber themperature
+
+    M117 Quad Gantry Level.
+    QUAD_GANTRY_LEVEL
+#    CHECK_QGL
+
+    ## Bed mesh new?
+    {% if "yes" in bmesh %}
+      BED_MESH_CALIBRATE
+    {% else %}
+      {% if bed_temp>=110 %}
+        BED_MESH_PROFILE LOAD=PEI-110T
+      {% endif %}
+      {% if bed_temp>=100 and bed_temp<110 %}
+        BED_MESH_PROFILE LOAD=PEI-100T
+      {% endif %}
+      {% if bed_temp>=90 and bed_temp<100 %}
+        BED_MESH_PROFILE LOAD=PEI-90T
+      {% endif %}
+      {% if bed_temp>=80 and bed_temp<90 %}
+        BED_MESH_PROFILE LOAD=PEI-80T
+      {% endif %}
+      {% if bed_temp>=70 and bed_temp<80 %}
+        BED_MESH_PROFILE LOAD=PEI-70T
+      {% endif %}
+      {% if bed_temp>=60 and bed_temp<70 %}
+        BED_MESH_PROFILE LOAD=PEI-60T
+      {% endif %}
+    {% endif %}
+
+    G1 X175 Y175 F18000 # Move to center of Bed
+
+    SET_HEATER_TEMPERATURE HEATER=extruder TARGET={extruder_temp}               # set nozzle t℃
+    M117 Extruder heating...
+    G90                                                                         # absolute positioning
+    M82                                                                         # absolute extrusion mode
+    TEMPERATURE_WAIT SENSOR=heater_bed MINIMUM={bed_temp}                       # wait until
+    TEMPERATURE_WAIT SENSOR=extruder MINIMUM={extruder_temp}                    # wait until
+#    M117 Home YXZ axis.
+#    G28
+    M117 Clean nozzle.
+    CLEAN_NOZZLE
+    G91
+    G1 E-2
+    G90
+#    G28 Z
+    M117 Caibration Z-offset.
+    CALIBRATE_Z
+;    G28                                                                         # home
+;    G0 Z10 F1500                                                                # raise Z
+;    G92 E0                                                                      # reset extruder
+;    G1 E{E} F1500                                                               # prime
+    G92 E0                                                                      # reset extruder
+    M117
+    PRIME_LINE
+
+  # start vefash if ABS
+    {% if "ABS" in filament_name %} 
+      VEFACH_ON
+    {% else %}
+      VEFACH_OFF
+    {% endif %}

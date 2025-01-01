@@ -50,20 +50,15 @@ gcode:
   {% set cfg_bed_max = printer.configfile.settings.heater_bed.max_temp|int - 5 %}
 #############  Prepare Stage #############
   {% if state == 'Prepare' %}  
-    LED_ON                                                                       # LED ON
-    SET_FILAMENT_SENSOR SENSOR=RunoutSensor ENABLE=0
-    _PRINT_AR T="Preparation stage"
+#    _PRINT_AR T="Preparation stage"
     M117 Preparation stage
     {% set bed_temp = params.BED_TEMP|default(80)|int %}
     {% set extruder_temp = params.EXTRUDER_TEMP|default(240)|int %}
+#    {% set extruder_temp_pre = (extruder_temp|float * 0.7)|int %}
     {% set extruder_temp_pre = 150 %}                                               # Extruder temperature prepare (podgotovka pechati)
-    {% set soak = printer["gcode_macro PRINT_START"].soak %}                          # Extruder temperature from script
-#    G28                                                                          # homing
-    _CG28
-    G90
-    M82
-    G0 X175 Y175
-#    PAUSE_BASE
+#    {% set soak = params.SOAK|default(0.35) %}
+  {% set soak = printer["gcode_macro PRINT_START"].soak %}                          # Extruder temperature from script
+
 #############  Variable setup  #############
     CLEAR_PAUSE
     SET_GCODE_VARIABLE MACRO=CANCEL_PRINT VARIABLE=execute VALUE='"false"'                # macros CANCEL_PRINT must have variable "execute" with value "false"
@@ -73,23 +68,24 @@ gcode:
     SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=bmeshv VALUE={bmesh}                    # bed mesh new or not new
     SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=left VALUE=30                           # counter for PWM calculate
 #############  Heating bed  #############
+    LED_ON                                                                       # LED ON
     # start Nevermore if ABS
-    # {% if "ABS" in filament_name %} 
-    # #      NEVERMORE_ON
-    #   SET_FAN_SPEED FAN=Nevermore SPEED=0.95
-    # {% else %}
-    #   NEVERMORE_OFF
-    # {% endif %}
+    {% if "ABS" in filament_name %} 
+    #      NEVERMORE_ON
+       SET_FAN_SPEED FAN=Nevermore SPEED=0.95
+    {% else %}
+      NEVERMORE_OFF
+    {% endif %}
     _PRINT_AR T="Heating Bed"
     {action_respond_info("Heating Bed")}
     M140 S{bed_temp|int}                                                         # start heating bed and not wait
     M104 S{extruder_pre|int}  ; heat bed and wait                                # start extruder pre-heat # ne imeet smasla s CHC Pro
 #    G28                                                                          # homing
-    # _CG28
-    # G90
-    # M82
+    _CG28
+    G90
+    M82
 #    G0 Z30 F1500                                                                 # Z to low 30
-    # G0 X175 Y175 F20000                                                            # head to center of bed
+    G0 X175 Y175 F20000                                                            # head to center of bed
     M106 S90              ; switch part cooling ~35% to move air in chamber
     M190 S{bed_temp|int}  ; heat bed and wait
     PAUSE_BASE                                                                   # PAUSE!!!!
@@ -119,50 +115,94 @@ gcode:
     UPDATE_DELAYED_GCODE ID=START_PRINT_WAIT DURATION=1
 #############  QGL #############
   {% elif state == 'QGL' %}
-    {% if printer.quad_gantry_level.applied == false %}
-      M106 S0
-      M117 Quad Gantry Level
-      _PRINT_AR T="Quad Gantry Level"
-#      SETUP_KAMP_MESHING DISPLAY_PARAMETERS=1 LED_ENABLE=1 FUZZ_ENABLE=1
-      BED_MESH_CLEAR
-      QUAD_GANTRY_LEVEL
-    {% endif %}
+    M106 S0
+    M117 Quad Gantry Level
+    _PRINT_AR T="Quad Gantry Level"
+#    BED_MESH_PROFILE LOAD=default
+    SETUP_KAMP_MESHING DISPLAY_PARAMETERS=1 LED_ENABLE=1 FUZZ_ENABLE=1
+    BED_MESH_CLEAR
+    QUAD_GANTRY_LEVEL
+#    G28 Z
     G28
+#    BED_MESH_PROFILE LOAD=default
     SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"BedMesh"'
     UPDATE_DELAYED_GCODE ID=START_PRINT_WAIT DURATION=0.1
 #############  Bed Mesh calibrate #############
   {% elif state == 'BedMesh' %}
     _PRINT_AR T="Bed mesh stage"
     {action_respond_info("Bed Mesh Calibrate")}
-    {action_respond_info("New bed mesh create")}
-    _PRINT_AR T="New bed mesh create"
-    CLEAN_NOZZLE
-    BED_MESH_CALIBRATE ADAPTIVE=1
+#    {% if bmeshv %}
+      {action_respond_info("New bed mesh create")}
+      _PRINT_AR T="New bed mesh create"
+#      BED_MESH_CALIBRATE AREA_START={params.AREA_START|default("0,0")} AREA_END={params.AREA_END|default("0,0")} # new bed mesh procedure
+#      RESUME_BASE
+      CLEAN_NOZZLE
+#      PAUSE_BASE
+#      BED_MESH_CALIBRATE AREA_START={params.AREA_START|default("0,0")} AREA_END={params.AREA_END|default("0,0")}
+      BED_MESH_CALIBRATE
+#    {% else %}
+#      {% if bed_temp>=110 %}
+#        BED_MESH_PROFILE LOAD=PEI-110T
+#      {% endif %}
+#      {% if bed_temp>=100 and bed_temp<110 %}
+#        BED_MESH_PROFILE LOAD=PEI-100T
+#      {% endif %}
+#      {% if bed_temp>=90 and bed_temp<100 %}
+#        BED_MESH_PROFILE LOAD=PEI-90T
+#      {% endif %}
+#      {% if bed_temp>=80 and bed_temp<90 %}
+#        BED_MESH_PROFILE LOAD=PEI-80T
+#      {% endif %}
+#      {% if bed_temp>=70 and bed_temp<80 %}
+#        BED_MESH_PROFILE LOAD=PEI-70T
+#      {% endif %}
+#      {% if bed_temp>=60 and bed_temp<70 %}
+#        BED_MESH_PROFILE LOAD=PEI-60T
+#      {% endif %}
+#    {% endif %}
+
     G90
-    G1 X175 Y175 F24000
+
+#    G0 Z30 F1500                                                                 # Z to low 30
+#    G1 X175 Y175 F30000                                                            # head to center of bed
     SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"Final"'
     UPDATE_DELAYED_GCODE ID=START_PRINT_WAIT DURATION=0.1
 #############  Final Stage #############
   {% elif state == 'Final' %}
-#    RESUME_BASE
-    _PRINT_AR T="Final stage..."
+    {action_respond_info("Final Stage")}
+    M117 Final Stage
+    # set staus back to prepare for the next run 
     SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"Prepare"' 
-    # set staus back to prepare for the next run     SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=state VALUE='"Prepare"' 
+#    M109 S{extruder|int} ; heat extruder and wait
+    M117 Clean nozzle.
     G90
+#    CLEAN_NOZZLE
+#    M83
+#    G1 E-3
+#    M117 Caibration Z-offset.
+#    RESUME_BASE
+#    CALIBRATE_Z
+#    G90
+#    G92 E0
+#    G0 Z10 F1500                                                                 # Z to low 30
+;    G1 X175 Y175 F30000   
+#    G1 X310 Y358 F20000  # Move to buckle / peremeschenie k bakle, pust tam greetsya
+#    M109 S{extruder|int} ; heat extruder and wait
     M104 S{extruder|int} ; heat extruder and wait
     TEMPERATURE_WAIT SENSOR=extruder MINIMUM={extruder|int} MAXIMUM={extruder|int+1}
-    G92 E0                                                                      # reset extruder 
-;    CLEAN_NOZZLE
-    _PRINT_AR T="Prime Line"
+;    PAUSE_BASE
+    G92 E0                                                                      # reset extruder
+#    G1 F24000
+;    G1 X175 Y175 F24000                                                         # Head to center of bed
+    M117 Prime Line Print
     PRIME_LINE
-;    LINE_PURGE
-    G21
     G90
     G92 E0
-    M83
-    _PRINT_AR T="Printing..."
-    RESUME_BASE
-    SET_FILAMENT_SENSOR SENSOR=RunoutSensor ENABLE=1
+    M117
+;    G0 Z10 F1500                                                                 #
+;    G1 X175 Y175 F24000                                                         # Head to center fo bed
+#    G1 F20000
+    RESUME_BASE                                                                 # RESUME !!!!!! 
   {% endif %}
 #############  Begin of ptinting #############
 
@@ -225,11 +265,10 @@ gcode:
   M117 Pause
   PAUSE_BASE
   G91
-;  G1 E-{E} F2100
-  G10
+  G1 E-{E} F2100
   G1 Z{z_safe} F900
   G90
-  G0 X{x_park} Y{y_park} F18000
+  G0 X{x_park} Y{y_park} F6000
   G91
 
 [gcode_macro RESUME]
@@ -240,8 +279,6 @@ gcode:
     G1 E{E} F2100
     G90
     RESTORE_GCODE_STATE NAME=PAUSE_state MOVE=1
-#    G1 F18000
-#    G0 F18000
     RESUME_BASE
 
 [gcode_macro CANCEL_PRINT]
